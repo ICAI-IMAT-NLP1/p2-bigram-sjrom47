@@ -29,8 +29,15 @@ def load_and_preprocess_data(
     with open(filepath, "r") as file:
         lines: List[str] = file.read().splitlines()
 
-    # TODO
-    bigrams: List[Tuple[str, str]] = None
+    # We extract the words and convert them to lowercase
+    names: List[str] = [line.rsplit(maxsplit=2)[0].lower() for line in lines]
+
+    bigrams: List[Tuple[str, str]] = []
+    for name in names:
+        bigrams.append((start_token, name[0]))
+        for i in range(len(name) - 1):
+            bigrams.append((name[i], name[i + 1]))
+        bigrams.append((name[-1], end_token))
 
     return bigrams
 
@@ -48,8 +55,13 @@ def char_to_index(alphabet: str, start_token: str, end_token: str) -> Dict[str, 
         Dict[str, int]: A dictionary mapping each character, including start and end tokens, to an index.
     """
     # Create a dictionary with start token at the beginning and end token at the end
-    # TODO
-    char_to_idx: Dict[str, int] = None
+    # start token
+    char_to_idx: Dict[str, int] = {start_token: 0}
+    # Alphabet tokens
+    for i in range(len(alphabet)):
+        char_to_idx[alphabet[i]] = i + 1
+    # End tokens
+    char_to_idx[end_token] = len(alphabet) + 1
 
     return char_to_idx
 
@@ -65,8 +77,7 @@ def index_to_char(char_to_index: Dict[str, int]) -> Dict[int, str]:
         Dict[int, str]: A dictionary mapping each index back to its corresponding character.
     """
     # Reverse the char_to_index mapping
-    # TODO
-    idx_to_char: Dict[int, str] = None
+    idx_to_char: Dict[int, str] = {value: key for key, value in char_to_index.items()}
 
     return idx_to_char
 
@@ -92,11 +103,16 @@ def count_bigrams(
     """
 
     # Initialize a 2D tensor for counting bigrams
-    # TODO
-    bigram_counts: torch.Tensor = None
+    tensor_size: int = len(char_to_idx)
+    bigram_counts: torch.Tensor = torch.zeros((tensor_size, tensor_size))
 
     # Iterate over each bigram and update the count in the tensor
-    # TODO
+    for bigram in bigrams:
+
+        i: int = char_to_idx.get(bigram[0], -1)
+        j: int = char_to_idx.get(bigram[1], -1)
+        if i != -1 and j != -1:
+            bigram_counts[i, j] += 1
 
     return bigram_counts
 
@@ -117,7 +133,12 @@ def plot_bigram_counts(bigram_counts: torch.Tensor, idx_to_char: Dict):
             char_str: str = idx_to_char[i] + idx_to_char[j]
             plt.text(j, i, char_str, ha="center", va="bottom", color="gray")
             plt.text(
-                j, i, bigram_counts[i, j].item(), ha="center", va="top", color="gray"
+                j,
+                i,
+                str(bigram_counts[i, j].item()),
+                ha="center",
+                va="top",
+                color="gray",
             )
 
     plt.axis("off")
